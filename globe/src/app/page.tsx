@@ -2,7 +2,9 @@
 
 import * as THREE from "three";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { TextureLoader } from "three";
+import { Stats, OrbitControls } from "@react-three/drei";
 import * as d3 from "d3"; // Import d3 for CSV parsing
 
 export default function Home() {
@@ -71,7 +73,7 @@ export default function Home() {
   const Circles = () => {
     const meshRef = useRef<THREE.InstancedMesh>(null!);
     const step = 0.6;
-    const circle_radius = 2.03;
+    const circle_radius = 2.09;
     const [count, positions, colors] = useMemo(() => {
       const positions: number[] = [];
       const colors: number[] = [];
@@ -148,21 +150,54 @@ export default function Home() {
     );
   };
 
+  const Earth = () => {
+    const [colorMap, displacementMap, normalMap, roughnessMap, aoMap] =
+      useLoader(TextureLoader, [
+        "/textures/denim/worn-blue-burlap-albedo.png",
+        "/textures/denim/worn-blue-burlap-Height.png",
+        "/textures/denim/worn-blue-burlap-Normal-ogl.png",
+        "/textures/denim/worn-blue-burlap-Roughness.png",
+        "/textures/denim/worn-blue-burlap-ao.png",
+      ]);
+
+    const repeatX = 5;
+    const repeatY = 5;
+
+    [colorMap, displacementMap, normalMap, roughnessMap, aoMap].forEach(
+      (map) => {
+        map.wrapS = map.wrapT = THREE.RepeatWrapping;
+        map.repeat.set(repeatX, repeatY);
+      }
+    );
+
+    return (
+      <mesh>
+        <sphereGeometry args={[2, 150, 150]} />
+        <meshStandardMaterial
+          displacementScale={0.05}
+          aoMapIntensity={0}
+          map={colorMap}
+          displacementMap={displacementMap}
+          normalMap={normalMap}
+          roughnessMap={roughnessMap}
+          aoMap={aoMap}
+        />
+      </mesh>
+    );
+  };
+
   const RotatingGroup = () => {
     const groupRef = useRef<THREE.Group>(null!);
 
     useFrame(() => {
       if (groupRef.current) {
-        groupRef.current.rotation.y += 0.005;
+        //groupRef.current.rotation.y += 0.005;
       }
     });
 
     return (
       <group ref={groupRef}>
-        <mesh>
-          <sphereGeometry args={[2, 100, 100]} />
-          <meshStandardMaterial color="blue" />
-        </mesh>
+        <Earth />
         <Circles />
       </group>
     );
@@ -187,6 +222,7 @@ export default function Home() {
             intensity={Math.PI}
           />
           <RotatingGroup />
+          <OrbitControls dampingFactor={0.01} />
         </Canvas>
       </div>
     </>
